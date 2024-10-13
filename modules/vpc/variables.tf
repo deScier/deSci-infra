@@ -1,5 +1,3 @@
-# modules/vpc/variables.tf
-
 variable "project_name" {
   description = "Nome do projeto"
   type        = string

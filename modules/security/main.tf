@@ -38,6 +38,35 @@ resource "aws_vpc_security_group_egress_rule" "alb_all" {
   ip_protocol       = "-1" # All protocols
 }
 
+# Create ECS task role
+resource "aws_iam_role" "ecs_task_role" {
+  name = "${var.project_name}-ecs-task-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "ecs-tasks.amazonaws.com"
+        }
+      },
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "ecs_task_role_s3_policy" {
+  role       = aws_iam_role.ecs_task_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess"
+}
+
+# Add a policy for CloudWatch Logs access
+resource "aws_iam_role_policy_attachment" "ecs_task_role_cloudwatch_policy" {
+  role       = aws_iam_role.ecs_task_role.name
+  policy_arn = "arn:aws:iam::aws:policy/CloudWatchLogsFullAccess"
+}
+
 # IAM role for ECS task execution
 resource "aws_iam_role" "ecs_task_execution" {
   name = "${var.project_name}-ecs-task-execution-role"
@@ -59,26 +88,6 @@ resource "aws_iam_role" "ecs_task_execution" {
 
   tags = {
     Name = "${var.project_name}-ecs-task-execution-role"
-  }
-}
-
-# IAM role for ECS task
-resource "aws_iam_role" "ecs_task" {
-  name = "${var.project_name}-ecs-task-role"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [{
-      Action = "sts:AssumeRole"
-      Effect = "Allow"
-      Principal = {
-        Service = "ecs-tasks.amazonaws.com"
-      }
-    }]
-  })
-
-  tags = {
-    Name = "${var.project_name}-ecs-task-role"
   }
 }
 
@@ -107,23 +116,23 @@ resource "aws_security_group" "ecs_tasks" {
   }
 }
 
-# Criação do segredo no AWS Secrets Manager
+# Create secret in AWS Secrets Manager
 resource "aws_secretsmanager_secret" "desci_app_develop" {
-  name        = "${var.project_name}-develop-secrets"
-  description = "Variáveis de ambiente para a aplicação ${var.project_name}"
+  name        = "${var.project_name}-develop-secret"
+  description = "Environment variables for ${var.project_name} application"
 
   tags = {
-    Name = "${var.project_name}-desci-app-dev-env"
+    Name = "${var.project_name}-develop-secret"
   }
 }
 
-# Definição da versão do segredo (valores sensíveis)
+# Define secret version (sensitive values)
 resource "aws_secretsmanager_secret_version" "desci_app_dev_env_version" {
   secret_id     = aws_secretsmanager_secret.desci_app_develop.id
   secret_string = data.local_file.env_json.content
 }
 
-# Documento de política para permitir acesso aos papéis do ECS
+# Policy document to allow access to ECS roles
 data "aws_iam_policy_document" "desci_app_dev_env_policy" {
   statement {
     sid    = "AllowECSRolesAccess"
@@ -133,7 +142,7 @@ data "aws_iam_policy_document" "desci_app_dev_env_policy" {
       type        = "AWS"
       identifiers = [
         aws_iam_role.ecs_task_execution.arn,
-        aws_iam_role.ecs_task.arn
+        aws_iam_role.ecs_task_role.arn
       ]
     }
 
@@ -148,7 +157,7 @@ data "aws_iam_policy_document" "desci_app_dev_env_policy" {
   }
 }
 
-# Anexar a política de recursos ao segredo
+# Attach resource policy to the secret
 resource "aws_secretsmanager_secret_policy" "desci_app_dev_env_policy" {
   secret_arn = aws_secretsmanager_secret.desci_app_develop.arn
   policy     = data.aws_iam_policy_document.desci_app_dev_env_policy.json

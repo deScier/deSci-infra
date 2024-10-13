@@ -1,5 +1,3 @@
-# variables.tf
-
 variable "region" {
   description = "The AWS region to deploy resources"
   type        = string
@@ -19,6 +17,7 @@ variable "secret_key" {
 variable "project_name" {
   description = "Name of the project"
   type        = string
+  default     = "descier-app"
 }
 
 variable "vpc_cidr" {

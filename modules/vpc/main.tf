@@ -1,5 +1,3 @@
-# modules/vpc/main.tf
-
 # Data source para obter as availability zones disponíveis
 data "aws_availability_zones" "available" {
   state = "available"

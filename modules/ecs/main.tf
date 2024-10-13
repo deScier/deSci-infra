@@ -15,21 +15,29 @@ resource "aws_ecs_task_definition" "main" {
 
   container_definitions = jsonencode([{
     name  = "${var.project_name}-container"
-    image = "${var.ecr_repository_url}:latest"
+    image = var.ecr_repository_url
     portMappings = [{
       containerPort = var.container_port
       hostPort      = var.container_port
     }]
+    logConfiguration = {
+      logDriver = "awslogs"
+      options = {
+        "awslogs-group"         = aws_cloudwatch_log_group.ecs_logs.name
+        "awslogs-region"        = var.region
+        "awslogs-stream-prefix" = "ecs"
+      }
+    }
   }])
 }
 
 # Create ECS service
-resource "aws_ecs_service" "main" {
+resource "aws_ecs_service" "app_service" {
   name            = "${var.project_name}-service"
   cluster         = aws_ecs_cluster.main.id
   task_definition = aws_ecs_task_definition.main.arn
-  launch_type     = "FARGATE"
   desired_count   = var.desired_count
+  launch_type     = "FARGATE"
 
   network_configuration {
     subnets          = var.subnet_ids
@@ -42,5 +50,9 @@ resource "aws_ecs_service" "main" {
     container_name   = "${var.project_name}-container"
     container_port   = var.container_port
   }
+}
 
+resource "aws_cloudwatch_log_group" "ecs_logs" {
+  name              = "/ecs/${var.project_name}"
+  retention_in_days = 30
 }
