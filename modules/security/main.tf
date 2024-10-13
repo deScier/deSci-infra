@@ -109,7 +109,7 @@ resource "aws_security_group" "ecs_tasks" {
 
 # Criação do segredo no AWS Secrets Manager
 resource "aws_secretsmanager_secret" "desci_app_develop" {
-  name        = "${var.project_name}-develop"
+  name        = "${var.project_name}-develop-secrets"
   description = "Variáveis de ambiente para a aplicação ${var.project_name}"
 
   tags = {
