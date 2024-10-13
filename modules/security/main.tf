@@ -1,18 +1,16 @@
+# Arquivo: main.tf
 data "local_file" "env_json" {
   filename = "${path.module}/../../.env.app.json"
 }
 
-# Security group for the Application Load Balancer (ALB)
+# Grupo de segurança para o Application Load Balancer (ALB)
 resource "aws_security_group" "alb" {
   name        = "${var.project_name}-alb-sg"
   description = "Security group for ALB"
   vpc_id      = var.vpc_id
 
-  tags = {
-    Name = "${var.project_name}-alb-sg"
-  }
-
- ingress {
+  ingress {
+    description = "Allow HTTP traffic"
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
@@ -20,63 +18,27 @@ resource "aws_security_group" "alb" {
   }
 
   ingress {
+    description = "Allow HTTPS traffic"
     from_port   = 443
     to_port     = 443
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  ingress {
-    from_port   = 3000
-    to_port     = 3000
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
   egress {
+    description = "Allow all outbound traffic"
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
+
+  tags = {
+    Name = "${var.project_name}-alb-sg"
+  }
 }
 
-# Create an SSL/TLS certificate (ACM)
-# resource "aws_acm_certificate" "app_certificate" {
-#   domain_name       = "dev.patiomais.com.br"
-#   validation_method = "DNS"
-
-#   tags = {
-#     Name = "pm-frontend-dev-certificate"
-#   }
-# }
-
-# Ingress rule for HTTP
-resource "aws_vpc_security_group_ingress_rule" "alb_http" {
-  security_group_id = aws_security_group.alb.id
-  cidr_ipv4         = "0.0.0.0/0"
-  from_port         = 80
-  ip_protocol       = "tcp"
-  to_port           = 80
-}
-
-# Ingress rule for HTTPS
-resource "aws_vpc_security_group_ingress_rule" "alb_https" {
-  security_group_id = aws_security_group.alb.id
-  cidr_ipv4         = "0.0.0.0/0"
-  from_port         = 443
-  ip_protocol       = "tcp"
-  to_port           = 443
-}
-
-# Egress rule for all traffic
-resource "aws_vpc_security_group_egress_rule" "alb_all" {
-  security_group_id = aws_security_group.alb.id
-  cidr_ipv4         = "0.0.0.0/0"
-  ip_protocol       = "-1" # All protocols
-}
-
-# Create ECS task role
+# Papel IAM para a tarefa ECS
 resource "aws_iam_role" "ecs_task_role" {
   name = "${var.project_name}-ecs-task-role"
 
@@ -99,13 +61,12 @@ resource "aws_iam_role_policy_attachment" "ecs_task_role_s3_policy" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess"
 }
 
-# Add a policy for CloudWatch Logs access
 resource "aws_iam_role_policy_attachment" "ecs_task_role_cloudwatch_policy" {
   role       = aws_iam_role.ecs_task_role.name
   policy_arn = "arn:aws:iam::aws:policy/CloudWatchLogsFullAccess"
 }
 
-# IAM role for ECS task execution
+# Papel IAM para execução da tarefa ECS
 resource "aws_iam_role" "ecs_task_execution" {
   name = "${var.project_name}-ecs-task-execution-role"
 
@@ -129,13 +90,14 @@ resource "aws_iam_role" "ecs_task_execution" {
   }
 }
 
-# Security group for ECS tasks
+# Grupo de segurança para tarefas ECS
 resource "aws_security_group" "ecs_tasks" {
   name        = "${var.project_name}-ecs-tasks-sg"
   description = "Security group for ECS tasks"
   vpc_id      = var.vpc_id
 
   ingress {
+    description = "Allow inbound traffic to container port"
     from_port   = var.container_port
     to_port     = var.container_port
     protocol    = "tcp"
@@ -143,6 +105,7 @@ resource "aws_security_group" "ecs_tasks" {
   }
 
   egress {
+    description = "Allow all outbound traffic"
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
@@ -154,23 +117,23 @@ resource "aws_security_group" "ecs_tasks" {
   }
 }
 
-# Create secret in AWS Secrets Manager
+# Cria um segredo no AWS Secrets Manager
 resource "aws_secretsmanager_secret" "desci_app_develop" {
-  name        = "${var.project_name}-develop-secret"
+  name        = "${var.project_name}-develop-environment"
   description = "Environment variables for ${var.project_name} application"
 
   tags = {
-    Name = "${var.project_name}-develop-secret"
+    Name = "${var.project_name}-develop-environment"
   }
 }
 
-# Define secret version (sensitive values)
+# Define a versão do segredo
 resource "aws_secretsmanager_secret_version" "desci_app_dev_env_version" {
   secret_id     = aws_secretsmanager_secret.desci_app_develop.id
   secret_string = data.local_file.env_json.content
 }
 
-# Policy document to allow access to ECS roles
+# Documento de política para permitir acesso aos papéis ECS
 data "aws_iam_policy_document" "desci_app_dev_env_policy" {
   statement {
     sid    = "AllowECSRolesAccess"
@@ -195,7 +158,7 @@ data "aws_iam_policy_document" "desci_app_dev_env_policy" {
   }
 }
 
-# Attach resource policy to the secret
+# Anexa a política de recurso ao segredo
 resource "aws_secretsmanager_secret_policy" "desci_app_dev_env_policy" {
   secret_arn = aws_secretsmanager_secret.desci_app_develop.arn
   policy     = data.aws_iam_policy_document.desci_app_dev_env_policy.json

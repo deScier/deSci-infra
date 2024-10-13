@@ -16,9 +16,12 @@ resource "aws_ecs_task_definition" "main" {
   container_definitions = jsonencode([{
     name  = "${var.project_name}-container"
     image = var.ecr_repository_url
+    essential = true
+    enableExecuteCommand = true
     portMappings = [{
       containerPort = var.container_port
       hostPort      = var.container_port
+      protocol      = "tcp"
     }]
     logConfiguration = {
       logDriver = "awslogs"
