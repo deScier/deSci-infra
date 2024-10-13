@@ -11,7 +11,45 @@ resource "aws_security_group" "alb" {
   tags = {
     Name = "${var.project_name}-alb-sg"
   }
+
+ ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 3000
+    to_port     = 3000
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 }
+
+# Create an SSL/TLS certificate (ACM)
+# resource "aws_acm_certificate" "app_certificate" {
+#   domain_name       = "dev.patiomais.com.br"
+#   validation_method = "DNS"
+
+#   tags = {
+#     Name = "pm-frontend-dev-certificate"
+#   }
+# }
 
 # Ingress rule for HTTP
 resource "aws_vpc_security_group_ingress_rule" "alb_http" {

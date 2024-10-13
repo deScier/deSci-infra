@@ -11,6 +11,7 @@ variable "vpc_id" {
 variable "subnet_ids" {
   description = "IDs of the subnets"
   type        = list(string)
+  default     = []
 }
 
 variable "security_group_id" {
