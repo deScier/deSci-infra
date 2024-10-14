@@ -3,6 +3,117 @@ resource "aws_ecs_cluster" "main" {
   name = "${var.project_name}-cluster"
 }
 
+# Get existing secret from Secrets Manager
+data "aws_secretsmanager_secret" "app_env_secret" {
+  name = "${var.project_name}-develop-environment"
+}
+
+data "aws_secretsmanager_secret_version" "app_env_secret_version" {
+  secret_id = data.aws_secretsmanager_secret.app_env_secret.id
+}
+
+# Attach the AmazonECSTaskExecutionRolePolicy policy to the ECS execution role
+resource "aws_iam_role_policy_attachment" "ecs_execution_policy_attachment" {
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
+  role       = aws_iam_role.ecs_execution_role.name
+}
+
+resource "aws_iam_role" "ecs_task_role" {
+  name = "ecs_task_role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "ecs-tasks.amazonaws.com"
+        }
+      },
+    ]
+  })
+}
+
+# Policy to allow access to secrets
+resource "aws_iam_role_policy" "ecs_task_secrets_policy" {
+  name = "ecs-task-secrets-policy"
+  role = aws_iam_role.ecs_task_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = [
+          "secretsmanager:GetSecretValue"
+        ]
+        Effect   = "Allow"
+        Resource = data.aws_secretsmanager_secret.app_env_secret.arn
+      }
+    ]
+  })
+}
+
+# Policy to allow access to secrets in the execution role
+resource "aws_iam_role_policy" "ecs_execution_secrets_policy" {
+  name = "ecs-execution-secrets-policy"
+  role = aws_iam_role.ecs_execution_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = [
+          "secretsmanager:GetSecretValue"
+        ]
+        Effect   = "Allow"
+        Resource = data.aws_secretsmanager_secret.app_env_secret.arn
+      }
+    ]
+  })
+}
+
+# Create IAM roles for ECS
+resource "aws_iam_role" "ecs_execution_role" {
+  name = "ecs_execution_role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "ecs-tasks.amazonaws.com"
+        }
+      },
+    ]
+  })
+}
+
+# ECSFargateAllowExecuteCommand policy
+resource "aws_iam_policy" "ecs_fargate_allow_execute_command_policy" {
+  name        = "ECSFargateAllowExecuteCommand"
+  description = "Allows ECS tasks to execute commands on the host"
+
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect   = "Allow",
+        Action   = [
+          "ecs:ExecuteCommand",
+          "ssm:SendCommand",
+          "ssm:ListCommandInvocations",
+          "ssm:ListCommands",
+          "ssm:GetCommandInvocation",
+        ],
+        Resource = "*"
+      }
+    ]
+  })
+}
+
 # Create ECS task definition
 resource "aws_ecs_task_definition" "main" {
   family                   = "${var.project_name}-task"
@@ -15,7 +126,7 @@ resource "aws_ecs_task_definition" "main" {
 
   container_definitions = jsonencode([{
     name  = "${var.project_name}-container"
-    image = var.ecr_repository_url
+    image = "${var.ecr_repository_url}:latest"
     essential = true
     enableExecuteCommand = true
     portMappings = [{
@@ -23,6 +134,12 @@ resource "aws_ecs_task_definition" "main" {
       hostPort      = var.container_port
       protocol      = "tcp"
     }]
+    secrets = [
+      {
+        name      = "ENV_FILE"
+        valueFrom = data.aws_secretsmanager_secret.app_env_secret.arn
+      }
+    ]
     logConfiguration = {
       logDriver = "awslogs"
       options = {
@@ -32,6 +149,10 @@ resource "aws_ecs_task_definition" "main" {
       }
     }
   }])
+
+  tags = {
+    version = timestamp()
+  }
 }
 
 # Create ECS service

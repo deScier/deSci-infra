@@ -29,3 +29,8 @@ variable "health_check_path" {
   type        = string
   default     = "/"
 }
+
+variable "certificate_arn" {
+  description = "ARN of the SSL certificate for HTTPS"
+  type        = string
+}

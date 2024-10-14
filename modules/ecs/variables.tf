@@ -27,7 +27,6 @@ variable "ecs_task_role_arn" {
 variable "ecr_repository_url" {
   description = "URL of the ECR repository"
   type        = string
-  default     = "125891978634.dkr.ecr.us-east-2.amazonaws.com/descier-app:latest"
 }
 
 variable "container_port" {

@@ -62,4 +62,5 @@ module "alb" {
   security_group_id = module.security.alb_security_group_id
   container_port    = var.container_port
   health_check_path = var.health_check_path
+  certificate_arn   = var.certificate_arn  # Add this line
 }
