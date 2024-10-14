@@ -140,6 +140,7 @@ resource "aws_ecs_task_definition" "main" {
         valueFrom = data.aws_secretsmanager_secret.app_env_secret.arn
       }
     ]
+    entryPoint = ["/app/entrypoint.sh"]
     logConfiguration = {
       logDriver = "awslogs"
       options = {
