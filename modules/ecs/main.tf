@@ -132,15 +132,9 @@ resource "aws_ecs_task_definition" "main" {
     enableExecuteCommand = true
     portMappings = [
       {
-        containerPort = 3000
-        hostPort      = 3000
+        containerPort = var.container_port
+        hostPort      = var.container_port
         protocol      = "tcp"
-      }
-    ]
-    environment = [
-      {
-        name  = "PORT"
-        value = tostring(var.container_port)
       }
     ]
     secrets = [
@@ -182,7 +176,7 @@ resource "aws_ecs_service" "app_service" {
   load_balancer {
     target_group_arn = var.target_group_arn
     container_name   = "${var.project_name}-container"
-    container_port   = 3000 
+    container_port   = var.container_port
   }
 }
 
