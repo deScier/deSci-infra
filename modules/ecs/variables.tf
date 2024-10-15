@@ -32,7 +32,7 @@ variable "ecr_repository_url" {
 variable "container_port" {
   description = "Port on which the container is listening"
   type        = number
-  default     = 80
+  default     = 3000
 }
 
 variable "task_cpu" {

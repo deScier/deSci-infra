@@ -50,6 +50,7 @@ variable "subnet_c_id" {
 variable "container_port" {
   description = "Port on which the container is listening"
   type        = number
+  default     = 3000
 }
 
 variable "task_cpu" {
@@ -75,7 +76,7 @@ variable "ecr_repository_url" {
 variable "health_check_path" {
   description = "Path for ALB health check"
   type        = string
-  default     = "/"
+  default     = "/home"
 }
 
 variable "subnet_cidrs" {

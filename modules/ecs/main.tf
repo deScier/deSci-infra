@@ -8,6 +8,7 @@ data "aws_secretsmanager_secret" "app_env_secret" {
   name = "${var.project_name}-develop-environment"
 }
 
+# Get the secret version
 data "aws_secretsmanager_secret_version" "app_env_secret_version" {
   secret_id = data.aws_secretsmanager_secret.app_env_secret.id
 }
@@ -129,18 +130,26 @@ resource "aws_ecs_task_definition" "main" {
     image = "${var.ecr_repository_url}:latest"
     essential = true
     enableExecuteCommand = true
-    portMappings = [{
-      containerPort = var.container_port
-      hostPort      = var.container_port
-      protocol      = "tcp"
-    }]
+    portMappings = [
+      {
+        containerPort = 3000
+        hostPort      = 3000
+        protocol      = "tcp"
+      }
+    ]
+    environment = [
+      {
+        name  = "PORT"
+        value = tostring(var.container_port)
+      }
+    ]
     secrets = [
       {
         name      = "ENV_FILE"
         valueFrom = data.aws_secretsmanager_secret.app_env_secret.arn
       }
     ]
-    entryPoint = ["/app/entrypoint.sh"]
+    command = ["sh", "-c", "echo \"$ENV_FILE\" > .env && cat .env && npm run start"]
     logConfiguration = {
       logDriver = "awslogs"
       options = {
@@ -173,7 +182,7 @@ resource "aws_ecs_service" "app_service" {
   load_balancer {
     target_group_arn = var.target_group_arn
     container_name   = "${var.project_name}-container"
-    container_port   = var.container_port
+    container_port   = 3000 
   }
 }
 
