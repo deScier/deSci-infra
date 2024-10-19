@@ -143,7 +143,7 @@ resource "aws_ecs_task_definition" "main" {
         valueFrom = data.aws_secretsmanager_secret.app_env_secret.arn
       }
     ]
-    command = ["sh", "-c", "echo \"$ENV_FILE\" > .env && cat .env && npm run start"]
+    command = ["sh","-c","echo \"$ENV_FILE\" > .env && cat .env && npm run start"]
     logConfiguration = {
       logDriver = "awslogs"
       options = {

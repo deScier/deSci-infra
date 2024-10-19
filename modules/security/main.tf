@@ -50,7 +50,7 @@ resource "aws_security_group" "alb" {
 
   ingress {
     description = "Allow HTTP traffic"
-    from_port   = 80
+    from_port   = 80 
     to_port     = 80
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
@@ -138,10 +138,6 @@ resource "aws_iam_role" "ecs_task_execution" {
     }]
   })
 
-  managed_policy_arns = [
-    "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
-  ]
-
   tags = {
     Name = "${var.project_name}-ecs-task-execution-role"
   }
@@ -155,7 +151,7 @@ resource "aws_security_group" "ecs_tasks" {
 
   ingress {
     description     = "Allow inbound traffic from ALB"
-    from_port       = var.container_port
+    from_port       = var.container_port 
     to_port         = var.container_port
     protocol        = "tcp"
     security_groups = [aws_security_group.alb.id]

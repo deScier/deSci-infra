@@ -24,3 +24,8 @@ variable "create_private_subnets" {
   type        = bool
   default     = false
 }
+
+variable "container_port" {
+  description = "Porta do container"
+  type        = number
+}

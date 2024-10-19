@@ -67,7 +67,7 @@ resource "aws_lb" "main" {
 # Create HTTP listener
 resource "aws_lb_listener" "http" {
   load_balancer_arn = aws_lb.main.arn
-  port              = var.container_port
+  port              = 80 
   protocol          = "HTTP"
 
   default_action {
