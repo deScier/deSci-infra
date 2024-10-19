@@ -2,47 +2,6 @@ data "local_file" "env_json" {
   filename = "${path.module}/../../.env.app.json"
 }
 
-# Grupo de segurança para o Application Load Balancer (ALB)
-# resource "aws_security_group" "alb" {
-#   name        = "${var.project_name}-alb-sg"
-#   description = "Security group for ALB"
-#   vpc_id      = var.vpc_id
-
-#   ingress {
-#     description = "Allow HTTP traffic"
-#     from_port   = 80
-#     to_port     = 80
-#     protocol    = "tcp"
-#     cidr_blocks = ["0.0.0.0/0"]
-#   }
-
-#   ingress {
-#     description = "Allow HTTPS traffic"
-#     from_port   = 443
-#     to_port     = 443
-#     protocol    = "tcp"
-#     cidr_blocks = ["0.0.0.0/0"]
-#   }
-
-#   ingress {
-#     from_port   = 3000
-#     to_port     = 3000
-#     protocol    = "tcp"
-#     cidr_blocks = ["0.0.0.0/0"]
-#   }
-
-#   egress {
-#     description = "Allow all outbound traffic"
-#     from_port   = 0
-#     to_port     = 0
-#     protocol    = "-1"
-#     cidr_blocks = ["0.0.0.0/0"]
-#   }
-
-#   tags = {
-#     Name = "${var.project_name}-alb-sg"
-#   }
-# }
 resource "aws_security_group" "alb" {
   name        = "${var.project_name}-alb-sg"
   description = "Security group for ALB"
@@ -149,16 +108,28 @@ resource "aws_security_group" "ecs_tasks" {
   description = "Security group for ECS tasks"
   vpc_id      = var.vpc_id
 
+ ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
   ingress {
-    description     = "Allow inbound traffic from ALB"
-    from_port       = var.container_port 
-    to_port         = var.container_port
-    protocol        = "tcp"
-    security_groups = [aws_security_group.alb.id]
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 3000
+    to_port     = 3000
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   egress {
-    description = "Allow all outbound traffic"
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
@@ -177,6 +148,16 @@ resource "aws_secretsmanager_secret" "desci_app_develop" {
 
   tags = {
     Name = "${var.project_name}-develop-environment"
+  }
+}
+
+# Create an SSL/TLS certificate (ACM)
+resource "aws_acm_certificate" "app_certificate" {
+  domain_name       = "dev.descier.science"
+  validation_method = "DNS"
+
+  tags = {
+    Name = "${var.project_name}-certificate"
   }
 }
 
