@@ -1,8 +1,3 @@
-# Create ECS cluster
-resource "aws_ecs_cluster" "main" {
-  name = "${var.project_name}-cluster"
-}
-
 # Get existing secret from Secrets Manager
 data "aws_secretsmanager_secret" "app_env_secret" {
   name = "${var.project_name}-develop-environment"
@@ -11,6 +6,11 @@ data "aws_secretsmanager_secret" "app_env_secret" {
 # Get the secret version
 data "aws_secretsmanager_secret_version" "app_env_secret_version" {
   secret_id = data.aws_secretsmanager_secret.app_env_secret.id
+}
+
+# Create ECS cluster
+resource "aws_ecs_cluster" "main" {
+  name = "${var.project_name}-cluster"
 }
 
 # Attach the AmazonECSTaskExecutionRolePolicy policy to the ECS execution role

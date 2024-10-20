@@ -27,7 +27,6 @@ variable "container_port" {
 variable "health_check_path" {
   description = "Path for ALB health check"
   type        = string
-  default     = "/home"
 }
 
 variable "certificate_arn" {

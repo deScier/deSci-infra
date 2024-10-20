@@ -1,7 +1,6 @@
 variable "project_name" {
   description = "Name of the project"
   type        = string
-  default     = "descier-app"
 }
 
 variable "vpc_id" {
@@ -32,25 +31,21 @@ variable "ecr_repository_url" {
 variable "container_port" {
   description = "Port on which the container is listening"
   type        = number
-  default     = 3000
 }
 
 variable "task_cpu" {
   description = "CPU units for the task"
   type        = string
-  default     = "256"
 }
 
 variable "task_memory" {
   description = "Memory for the task in MiB"
   type        = string
-  default     = "512"
 }
 
 variable "desired_count" {
   description = "Desired number of tasks"
   type        = number
-  default     = 2
 }
 
 variable "ecs_tasks_security_group_id" {
@@ -66,7 +61,6 @@ variable "target_group_arn" {
 variable "region" {
   description = "AWS region"
   type        = string
-  default     = "us-east-2"
 }
 
 variable "app_env_secret_arn" {

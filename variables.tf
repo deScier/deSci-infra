@@ -1,7 +1,6 @@
 variable "region" {
   description = "The AWS region to deploy resources"
   type        = string
-  default     = "us-east-2"
 }
 
 variable "access_key" {
@@ -17,19 +16,16 @@ variable "secret_key" {
 variable "project_name" {
   description = "Name of the project"
   type        = string
-  default     = "descier-app"
 }
 
 variable "vpc_cidr" {
   description = "CIDR block for the VPC"
   type        = string
-  default     = "10.0.0.0/16"
 }
 
 variable "availability_zones" {
   description = "List of availability zones"
   type        = list(string)
-  default     = ["us-east-2a", "us-east-2b", "us-east-2c"]
 }
 
 variable "subnet_a_id" {
@@ -50,7 +46,6 @@ variable "subnet_c_id" {
 variable "container_port" {
   description = "Port on which the container is listening"
   type        = number
-  default     = 3000
 }
 
 variable "task_cpu" {
@@ -76,13 +71,11 @@ variable "ecr_repository_url" {
 variable "health_check_path" {
   description = "Path for ALB health check"
   type        = string
-  default     = "/home"
 }
 
 variable "subnet_cidrs" {
   description = "CIDR blocks for the subnets"
   type        = list(string)
-  default     = ["10.0.0.0/24", "10.0.1.0/24", "10.0.2.0/24"]
 }
 
 variable "certificate_arn" {

@@ -2,6 +2,13 @@ data "local_file" "env_json" {
   filename = "${path.module}/../../.env.app.json"
 }
 
+data "aws_internet_gateway" "main" {
+  filter {
+    name   = "attachment.vpc-id"
+    values = [var.vpc_id]
+  }
+}
+
 resource "aws_security_group" "alb" {
   name        = "${var.project_name}-alb-sg"
   description = "Security group for ALB"
@@ -33,24 +40,6 @@ resource "aws_security_group" "alb" {
 
   tags = {
     Name = "${var.project_name}-alb-sg"
-  }
-}
-
-# Create a target group for the ECS tasks
-resource "aws_lb_target_group" "app_target_group" {
-  name     = "${var.project_name}-target-group"
-  port     = 3000
-  protocol = "HTTP"
-  vpc_id   = var.vpc_id
-
-  target_type = "ip"
-
-  health_check {
-    path                = "/home"
-    interval            = 30
-    timeout             = 5
-    healthy_threshold   = 2
-    unhealthy_threshold = 3
   }
 }
 
