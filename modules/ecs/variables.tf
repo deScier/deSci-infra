@@ -68,3 +68,8 @@ variable "region" {
   type        = string
   default     = "us-east-2"
 }
+
+variable "app_env_secret_arn" {
+  description = "ARN of the environment file"
+  type        = string
+}

@@ -16,21 +16,22 @@ resource "aws_lb" "main" {
 # Create HTTP listener
 resource "aws_lb_listener" "http" {
   load_balancer_arn = aws_lb.main.arn
-  port              = 80 
+  port              = 80
   protocol          = "HTTP"
 
   default_action {
-    type             = "redirect"
+    type = "redirect"
+
     redirect {
-      protocol = "HTTPS"
-      port     = "443"
+      port        = "443"
+      protocol    = "HTTPS"
       status_code = "HTTP_301"
     }
   }
 }
 
 # Create an HTTPS listener for the load balancer
-resource "aws_lb_listener" "https_listener" {
+resource "aws_lb_listener" "https" {
   load_balancer_arn = aws_lb.main.arn
   port              = 443
   protocol          = "HTTPS"
@@ -38,7 +39,7 @@ resource "aws_lb_listener" "https_listener" {
   certificate_arn   = var.certificate_arn
 
   default_action {
-    type = "forward"
+    type             = "forward"
     target_group_arn = aws_lb_target_group.main.arn
   }
 }
@@ -63,3 +64,9 @@ resource "aws_lb_target_group" "main" {
     Name = "${var.project_name}-tg"
   }
 }
+
+resource "aws_lb_listener_certificate" "https" {
+  listener_arn    = aws_lb_listener.https.arn
+  certificate_arn = var.certificate_arn
+}
+

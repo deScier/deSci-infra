@@ -141,7 +141,7 @@ resource "aws_security_group" "ecs_tasks" {
   }
 }
 
-# Cria um segredo no AWS Secrets Manager
+# Create a secret in AWS Secrets Manager
 resource "aws_secretsmanager_secret" "desci_app_develop" {
   name        = "${var.project_name}-develop-environment"
   description = "Environment variables for ${var.project_name} application"
@@ -152,14 +152,19 @@ resource "aws_secretsmanager_secret" "desci_app_develop" {
 }
 
 # Create an SSL/TLS certificate (ACM)
-resource "aws_acm_certificate" "app_certificate" {
-  domain_name       = "dev.descier.science"
+resource "aws_acm_certificate" "cert" {
+  domain_name       = "dev.desci.reviews"
   validation_method = "DNS"
 
   tags = {
-    Name = "${var.project_name}-certificate"
+    Environment = "development"
+  }
+
+  lifecycle {
+    create_before_destroy = true
   }
 }
+
 
 # Define a versão do segredo
 resource "aws_secretsmanager_secret_version" "desci_app_dev_env_version" {
