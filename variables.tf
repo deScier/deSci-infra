@@ -89,3 +89,8 @@ variable "certificate_arn" {
   description = "ARN of the SSL certificate for HTTPS"
   type        = string
 }
+
+variable "app_env_secret_arn" {
+  description = "ARN of the environment file"
+  type        = string
+}

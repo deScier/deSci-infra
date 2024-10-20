@@ -51,6 +51,7 @@ module "ecs" {
   ecr_repository_url          = var.ecr_repository_url
   target_group_arn            = module.alb.target_group_arn
   region                      = var.region
+  app_env_secret_arn          = var.app_env_secret_arn
 }
 
 # Module for Application Load Balancer
@@ -63,5 +64,5 @@ module "alb" {
   security_group_id = module.security.alb_security_group_id
   container_port    = var.container_port
   health_check_path = var.health_check_path
-  certificate_arn   = var.certificate_arn 
+  certificate_arn   = var.certificate_arn
 }

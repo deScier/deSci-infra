@@ -138,7 +138,7 @@ resource "aws_ecs_task_definition" "main" {
     secrets = [
       {
         name      = "ENV_FILE"
-        valueFrom = data.aws_secretsmanager_secret.app_env_secret.arn
+        valueFrom = var.app_env_secret_arn
       }
     ]
     command = ["sh","-c","echo \"$ENV_FILE\" > .env && cat .env && npm run start"]
