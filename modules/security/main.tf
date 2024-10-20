@@ -71,7 +71,6 @@ resource "aws_iam_role_policy_attachment" "ecs_task_role_cloudwatch_policy" {
   policy_arn = "arn:aws:iam::aws:policy/CloudWatchLogsFullAccess"
 }
 
-# Papel IAM para execução da tarefa ECS
 resource "aws_iam_role" "ecs_task_execution" {
   name = "${var.project_name}-ecs-task-execution-role"
 
@@ -89,6 +88,32 @@ resource "aws_iam_role" "ecs_task_execution" {
   tags = {
     Name = "${var.project_name}-ecs-task-execution-role"
   }
+}
+
+resource "aws_iam_role_policy" "ecs_ecr_pull" {
+  name = "${var.project_name}-ecs-ecr-pull-policy"
+  role = aws_iam_role.ecs_task_execution.id
+
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect = "Allow",
+        Action = [
+          "ecr:GetAuthorizationToken",
+          "ecr:GetDownloadUrlForLayer",
+          "ecr:BatchGetImage",
+          "ecr:BatchCheckLayerAvailability"
+        ],
+        Resource = "*"
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "ecs_execution_role_policy" {
+  role       = aws_iam_role.ecs_task_execution.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 }
 
 # Grupo de segurança para tarefas ECS
