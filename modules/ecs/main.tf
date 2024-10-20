@@ -90,7 +90,7 @@ resource "aws_iam_role" "ecs_execution_role" {
   })
 }
 
-# ECSFargateAllowExecuteCommand policy
+# Policy to allow ECS tasks to execute commands on the host
 resource "aws_iam_policy" "ecs_fargate_allow_execute_command_policy" {
   name        = "ECSFargateAllowExecuteCommand"
   description = "Allows ECS tasks to execute commands on the host"
@@ -141,7 +141,6 @@ resource "aws_ecs_task_definition" "main" {
         valueFrom = var.app_env_secret_arn
       }
     ]
-    command = ["sh","-c","echo \"$ENV_FILE\" > .env && cat .env && npm run start"]
     logConfiguration = {
       logDriver = "awslogs"
       options = {
