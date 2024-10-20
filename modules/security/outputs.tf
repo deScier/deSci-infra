@@ -17,3 +17,8 @@ output "ecs_tasks_security_group_id" {
   description = "ID of the ECS tasks security group"
   value       = aws_security_group.ecs_tasks.id
 }
+
+output "acm_certificate_arn" {
+  description = "ARN of the ACM certificate"
+  value       = aws_acm_certificate.cert.arn
+}
