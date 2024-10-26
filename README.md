@@ -1,90 +1,90 @@
-# Pipeline de CI/CD para a Plataforma deSci
+> 🌎 Language Options:
+>
+> - [Português Brasileiro](docs/pt-br/README.md)
+> - English (current)
 
-Este documento fornece uma visão detalhada do fluxo de trabalho de CI/CD configurado para a plataforma deScier. Aqui você encontrará uma explicação passo a passo de todo o processo, desde o push no repositório até a implantação na AWS, juntamente com um diagrama de fluxo para auxiliar na compreensão.
+This document provides a detailed overview of the CI/CD workflow configured for the deScier platform. Here you'll find a step-by-step explanation of the entire process, from repository push to AWS deployment, along with a flow diagram to aid understanding.
 
-## Sumário
+## Table of Contents
 
-- [Visão Geral](#visão-geral)
-- [Diagrama de Fluxo](#diagrama-de-fluxo)
-- [Fluxo de Trabalho do CI/CD](#fluxo-de-trabalho-do-cicd)
-  - [1. Push no Repositório](#1-push-no-repositório)
-  - [2. Início do Workflow no GitHub Actions](#2-início-do-workflow-no-github-actions)
-  - [3. Configuração do Ambiente de Build](#3-configuração-do-ambiente-de-build)
-  - [4. Construção e Push da Imagem Docker](#4-construção-e-push-da-imagem-docker)
-  - [5. Implantação no Amazon ECS](#5-implantação-no-amazon-ecs)
-- [Detalhes Adicionais](#detalhes-adicionais)
-  - [Dockerfile Personalizado](#dockerfile-personalizado)
-  - [Segurança e Boas Práticas](#segurança-e-boas-práticas)
+- [Overview](#overview)
+- [Flow Diagram](#flow-diagram)
+- [CI/CD Workflow](#cicd-workflow)
+  - [1. Repository Push](#1-repository-push)
+  - [2. GitHub Actions Workflow Start](#2-github-actions-workflow-start)
+  - [3. Build Environment Setup](#3-build-environment-setup)
+  - [4. Docker Image Build and Push](#4-docker-image-build-and-push)
+  - [5. Amazon ECS Deployment](#5-amazon-ecs-deployment)
 
-## Visão Geral
+## Overview
 
-A plataforma deScier utiliza um pipeline de CI/CD automatizado para garantir que as alterações de código sejam integradas e implantadas de forma contínua e confiável. O processo é orquestrado pelo GitHub Actions e faz uso dos serviços da AWS, incluindo o [Amazon ECR (Elastic Container Registry)](https://aws.amazon.com/pt/ecr/#:~:text=O%20Amazon%20Elastic%20Container%20Registry,forma%20confi%C3%A1vel%20em%20qualquer%20lugar.) e o [Amazon ECS (Elastic Container Service)](https://docs.aws.amazon.com/pt_br/AmazonECS/latest/developerguide/Welcome.html).
+The deScier platform uses an automated CI/CD pipeline to ensure code changes are continuously integrated and reliably deployed. The process is orchestrated by [GitHub Actions](https://github.com/deScier/deSci-platform/actions) and utilizes AWS services, including [Amazon ECR (Elastic Container Registry)](https://aws.amazon.com/ecr/) and [Amazon ECS (Elastic Container Service)](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/Welcome.html).
 
-## Diagrama de Fluxo
+## Flow Diagram
 
-Para visualizar todo o processo, veja o diagrama de fluxo abaixo:
+To visualize the entire process, see the flow diagram below:
 
 ```mermaid
 flowchart TD
-    subgraph Desenvolvedor
-        A[Push para Repositório] --> |branch: develop| B[Repositório GitHub]
-        A2[Push para Repositório] --> |branch: main| B
+    subgraph Developer
+        A[Repository Push] --> |branch: develop| B[GitHub Repository]
+        A2[Repository Push] --> |branch: main| B
     end
 
-    subgraph "Fluxo do GitHub Actions"
-        B --> |branch develop| C1[Dispara Workflow Dev]
-        B --> |branch main| C2[Dispara Workflow Prod]
+    subgraph "GitHub Actions Flow"
+        B --> |branch develop| C1[Trigger Dev Workflow]
+        B --> |branch main| C2[Trigger Prod Workflow]
 
-        subgraph "Fase de Configuração"
-            C1 --> D1[Checkout do Repositório]
-            C2 --> D2[Checkout do Repositório]
-            D1 & D2 --> E[Configurar QEMU]
-            E --> F[Configurar Docker Buildx]
+        subgraph "Setup Phase"
+            C1 --> D1[Repository Checkout]
+            C2 --> D2[Repository Checkout]
+            D1 & D2 --> E[Setup QEMU]
+            E --> F[Setup Docker Buildx]
         end
 
-        subgraph "Autenticação AWS"
-            F --> G[Configurar Credenciais AWS]
-            G --> H[Login no ECR]
-            H --> I[Obter URI do Repositório ECR]
+        subgraph "AWS Authentication"
+            F --> G[Configure AWS Credentials]
+            G --> H[ECR Login]
+            H --> I[Get ECR Repository URI]
         end
 
-        subgraph "Gerenciamento de Segredos"
-            I --> J[Buscar Segredos do AWS Secrets Manager]
-            J --> K[Criar arquivo .env]
+        subgraph "Secrets Management"
+            I --> J[Fetch AWS Secrets Manager Secrets]
+            J --> K[Create .env file]
         end
 
-        subgraph "Build e Push Docker"
-            K --> L[Construir Imagem Docker]
-            L --> M[Marcar Imagem com URI do ECR]
-            M --> N[Push para Amazon ECR]
+        subgraph "Docker Build and Push"
+            K --> L[Build Docker Image]
+            L --> M[Tag Image with ECR URI]
+            M --> N[Push to Amazon ECR]
         end
 
-        subgraph "Implantação ECS"
-            N --> |develop| O1[Definição de Tarefa Dev]
-            N --> |main| O2[Definição de Tarefa Prod]
-            O1 --> P1[Atualizar Imagem Dev]
-            O2 --> P2[Atualizar Imagem Prod]
-            P1 --> Q1[Registrar Tarefa Dev]
-            P2 --> Q2[Registrar Tarefa Prod]
-            Q1 --> R1[Atualizar Serviço Dev]
-            Q2 --> R2[Atualizar Serviço Prod]
-            R1 & R2 --> S[Aguardar Estabilidade do Serviço]
+        subgraph "ECS Deployment"
+            N --> |develop| O1[Dev Task Definition]
+            N --> |main| O2[Prod Task Definition]
+            O1 --> P1[Update Dev Image]
+            O2 --> P2[Update Prod Image]
+            P1 --> Q1[Register Dev Task]
+            P2 --> Q2[Register Prod Task]
+            Q1 --> R1[Update Dev Service]
+            Q2 --> R2[Update Prod Service]
+            R1 & R2 --> S[Wait for Service Stability]
         end
     end
 
-    subgraph "Infraestrutura AWS"
+    subgraph "AWS Infrastructure"
         S --> T[Amazon ECR]
-        T --> |develop| U1[Cluster ECS Dev]
-        T --> |main| U2[Cluster ECS Prod]
-        U1 --> V1[Serviço ECS Dev]
-        U2 --> V2[Serviço ECS Prod]
-        V1 --> W1[Tarefas Dev]
-        V2 --> W2[Tarefas Prod]
-        W1 --> X1[Contêineres Dev]
-        W2 --> X2[Contêineres Prod]
+        T --> |develop| U1[ECS Dev Cluster]
+        T --> |main| U2[ECS Prod Cluster]
+        U1 --> V1[ECS Dev Service]
+        U2 --> V2[ECS Prod Service]
+        V1 --> W1[Dev Tasks]
+        V2 --> W2[Prod Tasks]
+        W1 --> X1[Dev Containers]
+        W2 --> X2[Prod Containers]
     end
 
-    subgraph "Acesso Público"
+    subgraph "Public Access"
         X1 --> Y1[dev.desci.reviews]
         X2 --> Y2[platform.desci.reviews]
     end
@@ -100,45 +100,45 @@ flowchart TD
     class Y1,Y2 domain
 ```
 
-## Fluxo de Trabalho do CI/CD
+## CI/CD Workflow
 
-### 1. Push no Repositório
+### 1. Repository Push
 
-Quando os desenvolvedores fazem push de alterações para o branch `develop` do repositório `deSci-platform` no GitHub, isso aciona o pipeline de CI/CD.
+When developers push changes to the `develop` branch of the `deSci-platform` repository on GitHub, it triggers the CI/CD pipeline.
 
-### 2. Início do Workflow no GitHub Actions
+### 2. GitHub Actions Workflow Start
 
-O GitHub Actions detecta o evento de push e inicia o workflow definido no arquivo `.github/workflows/cd.yml`. Este workflow automatiza todo o processo de build e implantação.
+[GitHub Actions](https://github.com/deScier/deSci-platform/actions) detects the push event and initiates the workflow defined in the [`.github/workflows/cd.yml`](https://github.com/deScier/deSci-platform/blob/main/.github/workflows/cd.yml) file. This workflow automates the entire build and deployment process.
 
-### 3. Configuração do Ambiente de Build
+### 3. Build Environment Setup
 
-**a. Checkout do Código**
+**a. Code Checkout**
 
-O primeiro passo é clonar o repositório para o ambiente de build:
+The first step is to clone the repository to the build environment:
 
 ```yaml
-- name: Checkout do código
+- name: Code checkout
   uses: actions/checkout@v3
 ```
 
-**b. Configuração do QEMU e Buildx**
+**b. QEMU and Buildx Setup**
 
-Estas etapas configuram o emulador [QEMU](https://blog.infnet.com.br/virtualizacao/qemu-o-que-e-e-como-usar/) e o [Docker Buildx](https://awari.com.br/docker-buildx-aumentando-a-eficiencia-no-desenvolvimento-de-aplicacoes/?utm_source=blog&utm_campaign=projeto+blog&utm_medium=Docker%20Buildx:%20Aumentando%20a%20Efici%C3%AAncia%20no%20Desenvolvimento%20de%20Aplica%C3%A7%C3%B5es#:~:text=O%20Docker%20Buildx%20%C3%A9%20uma%20ferramenta%20avan%C3%A7ada%20que%20oferece%20recursos,constru%C3%A7%C3%A3o%20e%20desenvolvimento%20de%20aplica%C3%A7%C3%B5es.) para permitir a construção de imagens Docker multiplataforma:
+These steps configure the [QEMU](https://www.qemu.org/) emulator and [Docker Buildx](https://docs.docker.com/buildx/working-with-buildx/) to enable multi-platform Docker image building:
 
 ```yaml
-- name: Configurar QEMU
+- name: Set up QEMU
   uses: docker/setup-qemu-action@v2
 
-- name: Configurar Docker Buildx
+- name: Set up Docker Buildx
   uses: docker/setup-buildx-action@v2
 ```
 
-**c. Configuração das Credenciais AWS**
+**c. AWS Credentials Setup**
 
-Configura as credenciais AWS usando os secrets armazenados no GitHub:
+Configures AWS credentials using secrets stored in GitHub:
 
 ```yaml
-- name: Configurar credenciais AWS
+- name: Configure AWS credentials
   uses: aws-actions/configure-aws-credentials@v2
   with:
     aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -146,94 +146,94 @@ Configura as credenciais AWS usando os secrets armazenados no GitHub:
     aws-region: ${{ secrets.AWS_REGION }}
 ```
 
-**d. Login no Amazon ECR**
+**d. Amazon ECR Login**
 
-Autentica no registro de contêiner do Amazon ECR:
+Authenticates with Amazon ECR container registry:
 
 ```yaml
-- name: Fazer login no Amazon ECR
+- name: Login to Amazon ECR
   uses: aws-actions/amazon-ecr-login@v2
 ```
 
-**e. Obtenção do URI do Repositório ECR**
+**e. ECR Repository URI Retrieval**
 
-Recupera o URI completo do repositório ECR para onde a imagem Docker será enviada:
+Retrieves the full URI of the ECR repository where the Docker image will be pushed:
 
 ```yaml
-- name: Obter URI do repositório ECR
+- name: Get ECR repository URI
   id: ecr
   run: |
     echo "::set-output name=uri::$(aws ecr describe-repositories --repository-names $ECR_REPOSITORY_DEV --query 'repositories[0].repositoryUri' --output text)"
 ```
 
-**f. Recuperação de Segredos do AWS Secrets Manager**
+**f. AWS Secrets Manager Secrets Retrieval**
 
-Obtém os segredos necessários para a aplicação e os salva em um arquivo `.env`:
+Obtains the necessary secrets for the application and saves them to a `.env` file:
 
 ```yaml
-- name: Recuperar segredos do AWS Secrets Manager
+- name: Retrieve AWS Secrets Manager secrets
   run: |
     aws secretsmanager get-secret-value --secret-id $ENV_SECRET_NAME_DEV --query SecretString --output text > .env
 ```
 
-**Nota:** Os segredos são mantidos seguros e não são exibidos nos logs.
+**Note:** Secrets are kept secure and not displayed in logs.
 
-### 4. Construção e Push da Imagem Docker
+### 4. Docker Image Build and Push
 
-**a. Construção da Imagem Docker**
+**a. Docker Image Build**
 
-A imagem Docker é construída usando o `Dockerfile`, passando o conteúdo do arquivo `.env` como um argumento de build:
+The Docker image is built using the `Dockerfile`, passing the `.env` file content as a build argument:
 
 ```yaml
-- name: Construir a imagem Docker
+- name: Build Docker image
   run: |
     docker build --build-arg ENV_FILE="$(cat .env)" -t ${{ steps.ecr.outputs.uri }}:latest .
 ```
 
-**b. Push da Imagem para o Amazon ECR**
+**b. Push to Amazon ECR**
 
-Após a construção, a imagem é enviada para o Amazon ECR:
+After building, the image is pushed to Amazon ECR:
 
 ```yaml
-- name: Fazer push da imagem para o Amazon ECR
+- name: Push image to Amazon ECR
   run: |
     docker push ${{ steps.ecr.outputs.uri }}:latest
 ```
 
-### 5. Implantação no Amazon ECS
+### 5. Amazon ECS Deployment
 
-**a. Atualização da Definição de Tarefa**
+**a. Task Definition Update**
 
-- Baixa a definição de tarefa atual do ECS:
+- Downloads the current ECS task definition:
 
 ```yaml
-- name: Baixar definição de tarefa atual do ECS
+- name: Download current ECS task definition
   run: |
     aws ecs describe-task-definition --task-definition $ECS_TASK_DEV_NAME > task-definition.json
 ```
 
-- Atualiza a imagem na definição de tarefa:
+- Updates the image in the task definition:
 
 ```yaml
-- name: Atualizar imagem na definição de tarefa
+- name: Update image in task definition
   run: |
     sed -i 's#<IMAGE_NAME>#${{ steps.ecr.outputs.uri }}:latest#g' task-definition.json
 ```
 
-- Registra a nova definição de tarefa no ECS:
+- Registers the new task definition in ECS:
 
 ```yaml
-- name: Registrar nova definição de tarefa no ECS
+- name: Register new task definition in ECS
   run: |
     aws ecs register-task-definition --cli-input-json file://task-definition.json
 ```
 
-**b. Atualização do Serviço ECS**
+**b. ECS Service Update**
 
-Atualiza o serviço no ECS para usar a nova definição de tarefa:
+Updates the ECS service to use the new task definition:
 
 ```yaml
-- name: Atualizar serviço no ECS
+- name: Update ECS service
   uses: aws-actions/amazon-ecs-deploy-task-definition@v2
   with:
     task-definition: task-definition.json
@@ -242,71 +242,12 @@ Atualiza o serviço no ECS para usar a nova definição de tarefa:
     wait-for-service-stability: true
 ```
 
-**c. Logout do Amazon ECR**
+**c. Amazon ECR Logout**
 
-Por segurança, encerra a sessão com o Amazon ECR:
+For security, logs out from Amazon ECR:
 
 ```yaml
-- name: Logout do Amazon ECR
+- name: Logout from Amazon ECR
   run: |
     docker logout ${{ steps.ecr.outputs.uri }}
 ```
-
-## Detalhes Adicionais
-
-### Dockerfile Personalizado
-
-O `Dockerfile` foi projetado para incorporar o arquivo `.env` diretamente durante a construção da imagem, garantindo que as variáveis de ambiente necessárias estejam presentes no contêiner sem expor informações sensíveis nos logs.
-
-```dockerfile
-FROM node:18-alpine
-
-WORKDIR /app
-
-# Aceita o argumento de build para o conteúdo do .env
-ARG ENV_FILE
-
-# Escreve o conteúdo do ENV_FILE no .env dentro do contêiner
-RUN sh -c 'echo "$ENV_FILE" > .env'
-
-# Copia package.json e instala as dependências
-COPY package*.json ./
-RUN npm install
-
-# Copia o restante da aplicação
-COPY . .
-
-# Constrói a aplicação
-RUN npm run build
-
-# Define a propriedade do diretório /app
-RUN chown -R node:node /app
-
-# Alterna para o usuário não privilegiado
-USER node
-
-# Expõe a porta da aplicação
-EXPOSE 3000
-
-# Inicia a aplicação
-CMD ["npm", "start"]
-```
-
-### Segurança e Boas Práticas
-
-- **Segredos e Variáveis de Ambiente:**
-
-  - Os segredos são armazenados de forma segura no AWS Secrets Manager e somente acessados durante a execução do pipeline.
-  - O uso do argumento `ENV_FILE` no Dockerfile evita a exposição de variáveis sensíveis nos logs.
-
-- **Princípio do Menor Privilégio:**
-
-  - O contêiner é executado usando o usuário não privilegiado `node`, melhorando a segurança da aplicação.
-
-- **Automação e Eficiência:**
-
-  - A automação completa do processo reduz erros manuais e acelera o tempo de implantação.
-  - A utilização de ferramentas como QEMU e Buildx permite a construção de imagens para múltiplas arquiteturas.
-
-- **Observabilidade:**
-  - O pipeline inclui etapas que permitem monitorar e depurar o processo de implantação, como esperar pela estabilidade do serviço no ECS.
