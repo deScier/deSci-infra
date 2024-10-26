@@ -1,17 +1,17 @@
-# CI/CD Pipeline for deSci Platform
+# Pipeline de CI/CD para a Plataforma deSci
 
-Este documento fornece uma visão detalhada do fluxo de trabalho de CI/CD configurado para a plataforma deScier. Aqui você encontrará uma explicação passo a passo de todo o processo, desde o push no repositório até a implantação na AWS, juntamente com diagramas para auxiliar na compreensão.
+Este documento fornece uma visão detalhada do fluxo de trabalho de CI/CD configurado para a plataforma deScier. Aqui você encontrará uma explicação passo a passo de todo o processo, desde o push no repositório até a implantação na AWS, juntamente com um diagrama de fluxo para auxiliar na compreensão.
 
 ## Sumário
 
 - [Visão Geral](#visão-geral)
+- [Diagrama de Fluxo](#diagrama-de-fluxo)
 - [Fluxo de Trabalho do CI/CD](#fluxo-de-trabalho-do-cicd)
   - [1. Push no Repositório](#1-push-no-repositório)
   - [2. Início do Workflow no GitHub Actions](#2-início-do-workflow-no-github-actions)
   - [3. Configuração do Ambiente de Build](#3-configuração-do-ambiente-de-build)
   - [4. Construção e Push da Imagem Docker](#4-construção-e-push-da-imagem-docker)
   - [5. Implantação no Amazon ECS](#5-implantação-no-amazon-ecs)
-- [Diagrama de Fluxo](#diagrama-de-fluxo)
 - [Detalhes Adicionais](#detalhes-adicionais)
   - [Dockerfile Personalizado](#dockerfile-personalizado)
   - [Segurança e Boas Práticas](#segurança-e-boas-práticas)
@@ -22,77 +22,77 @@ A plataforma deScier utiliza um pipeline de CI/CD automatizado para garantir que
 
 ## Diagrama de Fluxo
 
-Para visualizar todo o processo, consulte o diagrama de fluxo abaixo:
+Para visualizar todo o processo, veja o diagrama de fluxo abaixo:
 
 ```mermaid
 flowchart TD
-    subgraph Developer
-        A[Developer faz push] --> |branch: develop| B[GitHub Repository]
-        A2[Developer faz push] --> |branch: main| B
+    subgraph Desenvolvedor
+        A[Push para Repositório] --> |branch: develop| B[Repositório GitHub]
+        A2[Push para Repositório] --> |branch: main| B
     end
 
-    subgraph "GitHub Actions Workflow"
-        B --> |develop branch| C1[Trigger Dev Workflow]
-        B --> |main branch| C2[Trigger Prod Workflow]
+    subgraph "Fluxo do GitHub Actions"
+        B --> |branch develop| C1[Dispara Workflow Dev]
+        B --> |branch main| C2[Dispara Workflow Prod]
 
-        subgraph "Setup Phase"
-            C1 --> D1[Checkout Repository]
-            C2 --> D2[Checkout Repository]
-            D1 & D2 --> E[Setup QEMU]
-            E --> F[Setup Docker Buildx]
+        subgraph "Fase de Configuração"
+            C1 --> D1[Checkout do Repositório]
+            C2 --> D2[Checkout do Repositório]
+            D1 & D2 --> E[Configurar QEMU]
+            E --> F[Configurar Docker Buildx]
         end
 
-        subgraph "AWS Authentication"
-            F --> G[Configure AWS Credentials]
-            G --> H[ECR Login]
-            H --> I[Get ECR Repository URI]
+        subgraph "Autenticação AWS"
+            F --> G[Configurar Credenciais AWS]
+            G --> H[Login no ECR]
+            H --> I[Obter URI do Repositório ECR]
         end
 
-        subgraph "Secrets Management"
-            I --> J[Fetch Secrets from AWS Secrets Manager]
-            J --> K[Create .env file]
+        subgraph "Gerenciamento de Segredos"
+            I --> J[Buscar Segredos do AWS Secrets Manager]
+            J --> K[Criar arquivo .env]
         end
 
-        subgraph "Docker Build & Push"
-            K --> L[Build Docker Image]
-            L --> M[Tag Image with ECR URI]
-            M --> N[Push to Amazon ECR]
+        subgraph "Build e Push Docker"
+            K --> L[Construir Imagem Docker]
+            L --> M[Marcar Imagem com URI do ECR]
+            M --> N[Push para Amazon ECR]
         end
 
-        subgraph "ECS Deployment"
-            N --> |develop| O1[Dev Task Definition]
-            N --> |main| O2[Prod Task Definition]
-            O1 --> P1[Update Dev Image]
-            O2 --> P2[Update Prod Image]
-            P1 --> Q1[Register Dev Task]
-            P2 --> Q2[Register Prod Task]
-            Q1 --> R1[Update Dev Service]
-            Q2 --> R2[Update Prod Service]
-            R1 & R2 --> S[Wait for service stability]
+        subgraph "Implantação ECS"
+            N --> |develop| O1[Definição de Tarefa Dev]
+            N --> |main| O2[Definição de Tarefa Prod]
+            O1 --> P1[Atualizar Imagem Dev]
+            O2 --> P2[Atualizar Imagem Prod]
+            P1 --> Q1[Registrar Tarefa Dev]
+            P2 --> Q2[Registrar Tarefa Prod]
+            Q1 --> R1[Atualizar Serviço Dev]
+            Q2 --> R2[Atualizar Serviço Prod]
+            R1 & R2 --> S[Aguardar Estabilidade do Serviço]
         end
     end
 
-    subgraph "AWS Infrastructure"
+    subgraph "Infraestrutura AWS"
         S --> T[Amazon ECR]
-        T --> |develop| U1[Dev ECS Cluster]
-        T --> |main| U2[Prod ECS Cluster]
-        U1 --> V1[Dev ECS Service]
-        U2 --> V2[Prod ECS Service]
-        V1 --> W1[Dev Tasks]
-        V2 --> W2[Prod Tasks]
-        W1 --> X1[Dev Containers]
-        W2 --> X2[Prod Containers]
+        T --> |develop| U1[Cluster ECS Dev]
+        T --> |main| U2[Cluster ECS Prod]
+        U1 --> V1[Serviço ECS Dev]
+        U2 --> V2[Serviço ECS Prod]
+        V1 --> W1[Tarefas Dev]
+        V2 --> W2[Tarefas Prod]
+        W1 --> X1[Contêineres Dev]
+        W2 --> X2[Contêineres Prod]
     end
 
-    subgraph "Public Access"
+    subgraph "Acesso Público"
         X1 --> Y1[dev.desci.reviews]
         X2 --> Y2[platform.desci.reviews]
     end
 
     classDef setup fill:#fff,stroke:#333,color:#333,stroke-width:2px
     classDef aws fill:#ff9900,color:#000
-    classDef container fill:#099,color:#fff
-    classDef domain fill:#2d8cff,color:#fff
+    classDef container fill:#4065a9,color:#fff
+    classDef domain fill:#70468c,color:#fff
 
     class A,A2,B setup
     class T,U1,U2,V1,V2,W1,W2 aws
@@ -299,7 +299,7 @@ CMD ["npm", "start"]
   - Os segredos são armazenados de forma segura no AWS Secrets Manager e somente acessados durante a execução do pipeline.
   - O uso do argumento `ENV_FILE` no Dockerfile evita a exposição de variáveis sensíveis nos logs.
 
-- **Princípio de Menor Privilégio:**
+- **Princípio do Menor Privilégio:**
 
   - O contêiner é executado usando o usuário não privilegiado `node`, melhorando a segurança da aplicação.
 
