@@ -1,27 +1,29 @@
-# Get existing secret from Secrets Manager
+# Retrieve the existing secret from AWS Secrets Manager
 data "aws_secretsmanager_secret" "app_env_secret" {
   name = "${var.project_name}-develop-environment"
 }
 
-# Get the secret version
+# Get the latest version of the secret
 data "aws_secretsmanager_secret_version" "app_env_secret_version" {
   secret_id = data.aws_secretsmanager_secret.app_env_secret.id
 }
 
-# Create ECS cluster
+# Create an ECS cluster
 resource "aws_ecs_cluster" "main" {
   name = "${var.project_name}-cluster"
 }
 
-# Attach the AmazonECSTaskExecutionRolePolicy policy to the ECS execution role
+# Attach the AmazonECSTaskExecutionRolePolicy to the ECS execution role
 resource "aws_iam_role_policy_attachment" "ecs_execution_policy_attachment" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
   role       = aws_iam_role.ecs_execution_role.name
 }
 
+# Create an IAM role for ECS tasks
 resource "aws_iam_role" "ecs_task_role" {
   name = "ecs_task_role"
 
+  # Define the trust relationship for the ECS task role
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
@@ -36,11 +38,12 @@ resource "aws_iam_role" "ecs_task_role" {
   })
 }
 
-# Policy to allow access to secrets
+# Create an IAM policy to allow ECS tasks to access secrets
 resource "aws_iam_role_policy" "ecs_task_secrets_policy" {
   name = "ecs-task-secrets-policy"
   role = aws_iam_role.ecs_task_role.id
 
+  # Define the policy to allow access to the specific secret
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
@@ -55,11 +58,12 @@ resource "aws_iam_role_policy" "ecs_task_secrets_policy" {
   })
 }
 
-# Policy to allow access to secrets in the execution role
+# Create an IAM policy to allow the ECS execution role to access secrets
 resource "aws_iam_role_policy" "ecs_execution_secrets_policy" {
   name = "ecs-execution-secrets-policy"
   role = aws_iam_role.ecs_execution_role.id
 
+  # Define the policy to allow access to the specific secret
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
@@ -74,10 +78,11 @@ resource "aws_iam_role_policy" "ecs_execution_secrets_policy" {
   })
 }
 
-# Create IAM roles for ECS
+# Create an IAM role for ECS task execution
 resource "aws_iam_role" "ecs_execution_role" {
   name = "ecs_execution_role"
 
+  # Define the trust relationship for the ECS execution role
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
@@ -90,11 +95,12 @@ resource "aws_iam_role" "ecs_execution_role" {
   })
 }
 
-# Policy to allow ECS tasks to execute commands on the host
+# Create an IAM policy to allow ECS tasks to execute commands on the host
 resource "aws_iam_policy" "ecs_fargate_allow_execute_command_policy" {
   name        = "ECSFargateAllowExecuteCommand"
   description = "Allows ECS tasks to execute commands on the host"
 
+  # Define the policy to allow specific ECS and SSM actions
   policy = jsonencode({
     Version = "2012-10-17",
     Statement = [
@@ -113,7 +119,7 @@ resource "aws_iam_policy" "ecs_fargate_allow_execute_command_policy" {
   })
 }
 
-# Create ECS task definition
+# Create an ECS task definition
 resource "aws_ecs_task_definition" "main" {
   family                   = "${var.project_name}-task"
   network_mode             = "awsvpc"
@@ -123,6 +129,7 @@ resource "aws_ecs_task_definition" "main" {
   execution_role_arn       = var.ecs_task_execution_role_arn
   task_role_arn            = var.ecs_task_role_arn
 
+  # Define the container specifications
   container_definitions = jsonencode([{
     name  = "${var.project_name}-container"
     image = "${var.ecr_repository_url}:latest"
@@ -156,7 +163,7 @@ resource "aws_ecs_task_definition" "main" {
   }
 }
 
-# Create ECS service
+# Create an ECS service
 resource "aws_ecs_service" "app_service" {
   name            = "${var.project_name}-service"
   cluster         = aws_ecs_cluster.main.id
@@ -165,12 +172,14 @@ resource "aws_ecs_service" "app_service" {
   launch_type     = "FARGATE"
   force_new_deployment = true
 
+  # Configure the network settings for the ECS service
   network_configuration {
     subnets          = var.subnet_ids
     security_groups  = [var.ecs_tasks_security_group_id]
     assign_public_ip = true
   }
 
+  # Configure the load balancer settings for the ECS service
   load_balancer {
     target_group_arn = var.target_group_arn
     container_name   = "${var.project_name}-container"
@@ -178,6 +187,7 @@ resource "aws_ecs_service" "app_service" {
   }
 }
 
+# Create a CloudWatch log group for ECS tasks
 resource "aws_cloudwatch_log_group" "ecs_logs" {
   name              = "/ecs/${var.project_name}"
   retention_in_days = 30

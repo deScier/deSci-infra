@@ -2,7 +2,9 @@
 terraform {
   required_providers {
     aws = {
+      # Specify the source of the AWS provider
       source  = "hashicorp/aws"
+      # Set the version constraint for the AWS provider
       version = "~> 5.0" 
     }
   }
@@ -10,16 +12,21 @@ terraform {
 
 # Configure the AWS provider
 provider "aws" {
+  # Set the AWS region for resource creation
   region     = var.region
+  # Specify the AWS access key for authentication
   access_key = var.access_key
+  # Specify the AWS secret key for authentication
   secret_key = var.secret_key
 }
 
 # Module for VPC and network resources
 module "vpc" {
+  # Source path for the VPC module
   source = "./modules/vpc"
 
-  container_port   = var.container_port
+  # Pass variables to the VPC module
+  container_port     = var.container_port
   project_name       = var.project_name
   vpc_cidr           = var.vpc_cidr
   availability_zones = var.availability_zones
@@ -27,8 +34,10 @@ module "vpc" {
 
 # Module for security groups and IAM roles
 module "security" {
+  # Source path for the security module
   source = "./modules/security"
 
+  # Pass variables to the security module
   project_name   = var.project_name
   vpc_id         = module.vpc.vpc_id
   container_port = var.container_port
@@ -36,8 +45,10 @@ module "security" {
 
 # Module for ECS resources
 module "ecs" {
+  # Source path for the ECS module
   source = "./modules/ecs"
 
+  # Pass variables to the ECS module
   project_name                = var.project_name
   vpc_id                      = module.vpc.vpc_id
   subnet_ids                  = module.vpc.public_subnet_ids
@@ -56,8 +67,10 @@ module "ecs" {
 
 # Module for Application Load Balancer
 module "alb" {
+  # Source path for the ALB module
   source = "./modules/alb"
 
+  # Pass variables to the ALB module
   project_name      = var.project_name
   vpc_id            = module.vpc.vpc_id
   subnet_ids        = module.vpc.public_subnet_ids

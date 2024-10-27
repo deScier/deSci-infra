@@ -1,7 +1,10 @@
+# Load environment variables from a JSON file
 data "local_file" "env_json" {
+  # Path to the JSON file containing environment variables
   filename = "${path.module}/../../.env.app.json"
 }
 
+# Retrieve the Internet Gateway associated with the specified VPC
 data "aws_internet_gateway" "main" {
   filter {
     name   = "attachment.vpc-id"
@@ -9,11 +12,13 @@ data "aws_internet_gateway" "main" {
   }
 }
 
+# Create a security group for the Application Load Balancer (ALB)
 resource "aws_security_group" "alb" {
   name        = "${var.project_name}-alb-sg"
   description = "Security group for ALB"
   vpc_id      = var.vpc_id
 
+  # Allow inbound HTTP traffic
   ingress {
     description = "Allow HTTP traffic"
     from_port   = 80 
@@ -22,6 +27,7 @@ resource "aws_security_group" "alb" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+  # Allow inbound HTTPS traffic
   ingress {
     description = "Allow HTTPS traffic"
     from_port   = 443
@@ -30,6 +36,7 @@ resource "aws_security_group" "alb" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+  # Allow all outbound traffic
   egress {
     description = "Allow all outbound traffic"
     from_port   = 0
@@ -43,10 +50,11 @@ resource "aws_security_group" "alb" {
   }
 }
 
-# Papel IAM para a tarefa ECS
+# Create an IAM role for ECS tasks
 resource "aws_iam_role" "ecs_task_role" {
   name = "${var.project_name}-ecs-task-role"
 
+  # Define the trust relationship policy for the role
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
@@ -61,19 +69,23 @@ resource "aws_iam_role" "ecs_task_role" {
   })
 }
 
+# Attach S3 read-only access policy to the ECS task role
 resource "aws_iam_role_policy_attachment" "ecs_task_role_s3_policy" {
   role       = aws_iam_role.ecs_task_role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess"
 }
 
+# Attach CloudWatch Logs full access policy to the ECS task role
 resource "aws_iam_role_policy_attachment" "ecs_task_role_cloudwatch_policy" {
   role       = aws_iam_role.ecs_task_role.name
   policy_arn = "arn:aws:iam::aws:policy/CloudWatchLogsFullAccess"
 }
 
+# Create an IAM role for ECS task execution
 resource "aws_iam_role" "ecs_task_execution" {
   name = "${var.project_name}-ecs-task-execution-role"
 
+  # Define the trust relationship policy for the role
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
@@ -90,10 +102,12 @@ resource "aws_iam_role" "ecs_task_execution" {
   }
 }
 
+# Create an IAM policy for ECR access and attach it to the ECS task execution role
 resource "aws_iam_role_policy" "ecs_ecr_pull" {
   name = "${var.project_name}-ecs-ecr-pull-policy"
   role = aws_iam_role.ecs_task_execution.id
 
+  # Define the policy to allow ECR access
   policy = jsonencode({
     Version = "2012-10-17",
     Statement = [
@@ -111,17 +125,19 @@ resource "aws_iam_role_policy" "ecs_ecr_pull" {
   })
 }
 
+# Attach the ECS task execution role policy to the ECS task execution role
 resource "aws_iam_role_policy_attachment" "ecs_execution_role_policy" {
   role       = aws_iam_role.ecs_task_execution.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 }
 
-# Grupo de segurança para tarefas ECS
+# Create a security group for ECS tasks
 resource "aws_security_group" "ecs_tasks" {
   name        = "${var.project_name}-ecs-tasks-sg"
   description = "Security group for ECS tasks"
   vpc_id      = var.vpc_id
 
+  # Allow inbound traffic from ALB to container port
   ingress {
     from_port       = var.container_port
     to_port         = var.container_port
@@ -129,6 +145,7 @@ resource "aws_security_group" "ecs_tasks" {
     security_groups = [aws_security_group.alb.id]
   }
 
+  # Allow inbound HTTPS traffic
   ingress {
     from_port   = 443
     to_port     = 443
@@ -136,6 +153,7 @@ resource "aws_security_group" "ecs_tasks" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+  # Allow inbound traffic on port 3000
   ingress {
     from_port   = 3000
     to_port     = 3000
@@ -143,6 +161,7 @@ resource "aws_security_group" "ecs_tasks" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+  # Allow all outbound traffic
   egress {
     from_port   = 0
     to_port     = 0
@@ -165,7 +184,7 @@ resource "aws_secretsmanager_secret" "desci_app_develop" {
   }
 }
 
-# Create an SSL/TLS certificate (ACM)
+# Create an SSL/TLS certificate using AWS Certificate Manager (ACM)
 resource "aws_acm_certificate" "cert" {
   domain_name       = "dev.desci.reviews"
   validation_method = "DNS"
@@ -179,14 +198,13 @@ resource "aws_acm_certificate" "cert" {
   }
 }
 
-
-# Define a versão do segredo
+# Create a version for the secret in AWS Secrets Manager
 resource "aws_secretsmanager_secret_version" "desci_app_dev_env_version" {
   secret_id     = aws_secretsmanager_secret.desci_app_develop.id
   secret_string = data.local_file.env_json.content
 }
 
-# Documento de política para permitir acesso aos papéis ECS
+# Create an IAM policy document to allow ECS roles access to the secret
 data "aws_iam_policy_document" "desci_app_dev_env_policy" {
   statement {
     sid    = "AllowECSRolesAccess"
@@ -211,7 +229,7 @@ data "aws_iam_policy_document" "desci_app_dev_env_policy" {
   }
 }
 
-# Anexa a política de recurso ao segredo
+# Attach the resource policy to the secret in AWS Secrets Manager
 resource "aws_secretsmanager_secret_policy" "desci_app_dev_env_policy" {
   secret_arn = aws_secretsmanager_secret.desci_app_develop.arn
   policy     = data.aws_iam_policy_document.desci_app_dev_env_policy.json
