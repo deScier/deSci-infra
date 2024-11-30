@@ -1,6 +1,6 @@
 # Retrieve the existing secret from AWS Secrets Manager
 data "aws_secretsmanager_secret" "app_env_secret" {
-  name = "${var.project_name}-develop-environment"
+  name = "${var.project_name}-production-env"
 }
 
 # Get the latest version of the secret

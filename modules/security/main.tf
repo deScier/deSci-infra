@@ -1,7 +1,7 @@
 # Load environment variables from a JSON file
 data "local_file" "env_json" {
   # Path to the JSON file containing environment variables
-  filename = "${path.module}/../../.env.app.json"
+  filename = "${path.module}/../../.env.prod.json"
 }
 
 # Retrieve the Internet Gateway associated with the specified VPC
@@ -174,38 +174,19 @@ resource "aws_security_group" "ecs_tasks" {
   }
 }
 
-# Create a secret in AWS Secrets Manager
-resource "aws_secretsmanager_secret" "desci_app_develop" {
-  name        = "${var.project_name}-develop-environment"
-  description = "Environment variables for ${var.project_name} application"
-
-  tags = {
-    Name = "${var.project_name}-develop-environment"
-  }
-}
-
-# Create an SSL/TLS certificate using AWS Certificate Manager (ACM)
-resource "aws_acm_certificate" "cert" {
-  domain_name       = "platform.desci.reviews"
-  validation_method = "DNS"
-
-  tags = {
-    Environment = "development"
-  }
-
-  lifecycle {
-    create_before_destroy = true
-  }
+# Try to fetch existing secret
+data "aws_secretsmanager_secret" "existing_secret" {
+  name = "${var.project_name}-production-env"
 }
 
 # Create a version for the secret in AWS Secrets Manager
-resource "aws_secretsmanager_secret_version" "desci_app_dev_env_version" {
-  secret_id     = aws_secretsmanager_secret.desci_app_develop.id
+resource "aws_secretsmanager_secret_version" "desci_app_prod_env_version" {
+  secret_id     = data.aws_secretsmanager_secret.existing_secret.id
   secret_string = data.local_file.env_json.content
 }
 
 # Create an IAM policy document to allow ECS roles access to the secret
-data "aws_iam_policy_document" "desci_app_dev_env_policy" {
+data "aws_iam_policy_document" "desci_app_prod_env_policy" {
   statement {
     sid    = "AllowECSRolesAccess"
     effect = "Allow"
@@ -224,13 +205,27 @@ data "aws_iam_policy_document" "desci_app_dev_env_policy" {
     ]
 
     resources = [
-      aws_secretsmanager_secret.desci_app_develop.arn
+      data.aws_secretsmanager_secret.existing_secret.arn
     ]
   }
 }
 
 # Attach the resource policy to the secret in AWS Secrets Manager
-resource "aws_secretsmanager_secret_policy" "desci_app_dev_env_policy" {
-  secret_arn = aws_secretsmanager_secret.desci_app_develop.arn
-  policy     = data.aws_iam_policy_document.desci_app_dev_env_policy.json
+resource "aws_secretsmanager_secret_policy" "desci_app_prod_env_policy" {
+  secret_arn = data.aws_secretsmanager_secret.existing_secret.arn
+  policy     = data.aws_iam_policy_document.desci_app_prod_env_policy.json
+}
+
+# Create an SSL/TLS certificate using AWS Certificate Manager (ACM)
+resource "aws_acm_certificate" "cert" {
+  domain_name       = "platform.desci.reviews"
+  validation_method = "DNS"
+
+  tags = {
+    Environment = "development"
+  }
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
