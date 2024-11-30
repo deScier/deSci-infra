@@ -186,7 +186,7 @@ resource "aws_secretsmanager_secret" "desci_app_develop" {
 
 # Create an SSL/TLS certificate using AWS Certificate Manager (ACM)
 resource "aws_acm_certificate" "cert" {
-  domain_name       = "dev.desci.reviews"
+  domain_name       = "platform.desci.reviews"
   validation_method = "DNS"
 
   tags = {
