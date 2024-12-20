@@ -177,13 +177,13 @@ resource "aws_ecs_service" "app_service" {
 
   capacity_provider_strategy {
     capacity_provider = "FARGATE"
-    weight            = 20
-    base              = 1
+    weight            = 40
+    base              = 2
   }
 
   capacity_provider_strategy {
     capacity_provider = "FARGATE_SPOT"
-    weight            = 80
+    weight            = 60
     base              = 0
   }
 }
