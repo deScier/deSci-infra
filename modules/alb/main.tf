@@ -16,7 +16,7 @@ resource "aws_lb" "main" {
   subnets            = var.subnet_ids
   
   # Set the idle timeout for the ALB (in seconds)
-  idle_timeout       = 400
+  idle_timeout       = 120
 
   # Disable deletion protection for easier management in non-production environments
   enable_deletion_protection = false

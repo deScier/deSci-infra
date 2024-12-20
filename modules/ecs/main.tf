@@ -158,8 +158,7 @@ resource "aws_ecs_service" "app_service" {
   name            = "${var.project_name}-service"
   cluster         = aws_ecs_cluster.main.id
   task_definition = aws_ecs_task_definition.main.arn
-  desired_count   = var.desired_count
-  launch_type     = "FARGATE"
+  desired_count   = 1
   force_new_deployment = true
 
   # Configure the network settings for the ECS service
@@ -175,10 +174,22 @@ resource "aws_ecs_service" "app_service" {
     container_name   = "${var.project_name}-container"
     container_port   = var.container_port
   }
+
+  capacity_provider_strategy {
+    capacity_provider = "FARGATE"
+    weight            = 20
+    base              = 1
+  }
+
+  capacity_provider_strategy {
+    capacity_provider = "FARGATE_SPOT"
+    weight            = 80
+    base              = 0
+  }
 }
 
 # Create a CloudWatch log group for ECS tasks
 resource "aws_cloudwatch_log_group" "ecs_logs" {
   name              = "/ecs/${var.project_name}"
-  retention_in_days = 30
+  retention_in_days = 7
 }
