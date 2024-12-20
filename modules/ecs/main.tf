@@ -175,15 +175,16 @@ resource "aws_ecs_service" "app_service" {
     container_port   = var.container_port
   }
 
+  # Configure the capacity provider strategy for the ECS service
   capacity_provider_strategy {
     capacity_provider = "FARGATE"
-    weight            = 40
-    base              = 2
+    weight            = 20
+    base              = 1
   }
-
+  
   capacity_provider_strategy {
     capacity_provider = "FARGATE_SPOT"
-    weight            = 60
+    weight            = 80
     base              = 0
   }
 }
