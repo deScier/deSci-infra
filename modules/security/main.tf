@@ -174,14 +174,19 @@ resource "aws_security_group" "ecs_tasks" {
   }
 }
 
-# Try to fetch existing secret
-data "aws_secretsmanager_secret" "existing_secret" {
+# Create the secret if it doesn't exist
+resource "aws_secretsmanager_secret" "app_secret" {
   name = "${var.project_name}-production-env"
+  
+  tags = {
+    Environment = "production"
+    Project     = var.project_name
+  }
 }
 
 # Create a version for the secret in AWS Secrets Manager
 resource "aws_secretsmanager_secret_version" "desci_app_prod_env_version" {
-  secret_id     = data.aws_secretsmanager_secret.existing_secret.id
+  secret_id     = aws_secretsmanager_secret.app_secret.id
   secret_string = data.local_file.env_json.content
 }
 
@@ -205,14 +210,14 @@ data "aws_iam_policy_document" "desci_app_prod_env_policy" {
     ]
 
     resources = [
-      data.aws_secretsmanager_secret.existing_secret.arn
+      aws_secretsmanager_secret.app_secret.arn
     ]
   }
 }
 
 # Attach the resource policy to the secret in AWS Secrets Manager
 resource "aws_secretsmanager_secret_policy" "desci_app_prod_env_policy" {
-  secret_arn = data.aws_secretsmanager_secret.existing_secret.arn
+  secret_arn = aws_secretsmanager_secret.app_secret.arn
   policy     = data.aws_iam_policy_document.desci_app_prod_env_policy.json
 }
 

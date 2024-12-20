@@ -1,13 +1,3 @@
-# Retrieve the existing secret from AWS Secrets Manager
-data "aws_secretsmanager_secret" "app_env_secret" {
-  name = "${var.project_name}-production-env"
-}
-
-# Get the latest version of the secret
-data "aws_secretsmanager_secret_version" "app_env_secret_version" {
-  secret_id = data.aws_secretsmanager_secret.app_env_secret.id
-}
-
 # Create an ECS cluster
 resource "aws_ecs_cluster" "main" {
   name = "${var.project_name}-cluster"
@@ -52,7 +42,7 @@ resource "aws_iam_role_policy" "ecs_task_secrets_policy" {
           "secretsmanager:GetSecretValue"
         ]
         Effect   = "Allow"
-        Resource = data.aws_secretsmanager_secret.app_env_secret.arn
+        Resource = var.app_env_secret_arn
       }
     ]
   })
@@ -72,7 +62,7 @@ resource "aws_iam_role_policy" "ecs_execution_secrets_policy" {
           "secretsmanager:GetSecretValue"
         ]
         Effect   = "Allow"
-        Resource = data.aws_secretsmanager_secret.app_env_secret.arn
+        Resource = var.app_env_secret_arn
       }
     ]
   })

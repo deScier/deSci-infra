@@ -64,6 +64,6 @@ variable "region" {
 }
 
 variable "app_env_secret_arn" {
-  description = "ARN of the environment file"
+  description = "ARN of the environment secret in AWS Secrets Manager"
   type        = string
 }

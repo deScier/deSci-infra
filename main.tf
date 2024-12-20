@@ -62,7 +62,7 @@ module "ecs" {
   ecr_repository_url          = var.ecr_repository_url
   target_group_arn            = module.alb.target_group_arn
   region                      = var.region
-  app_env_secret_arn          = var.app_env_secret_arn
+  app_env_secret_arn          = module.security.app_secret_arn
 }
 
 # Module for Application Load Balancer
